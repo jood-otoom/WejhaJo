@@ -1,11 +1,5 @@
-import Link from "next/link";
 import type { Metadata } from "next";
-import {
-  ArrowUpRight,
-  ChartNoAxesCombined,
-  MapPin,
-  SlidersHorizontal,
-} from "lucide-react";
+import { ChartNoAxesCombined, MapPin, SlidersHorizontal } from "lucide-react";
 import { Hero } from "@/components/sections/hero";
 import {
   About,
@@ -17,7 +11,10 @@ import {
 import { Contact } from "@/components/sections/contact";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { Portfolio } from "@/components/projects/portfolio";
-import { ImpactPreview } from "@/components/dashboards/showcase-loaders";
+import {
+  ImpactPreview,
+  PortfolioDemos,
+} from "@/components/dashboards/showcase-loaders";
 import { site, siteUrl } from "@/config/site";
 
 export const metadata: Metadata = {
@@ -73,8 +70,7 @@ export default function Home() {
             id="portfolio-heading"
             title="Technology built around real needs."
           >
-            Explore GoTime and our solution showcases across software, AI and
-            data science.
+            Explore our work across software, AI and data science.
           </SectionHeading>
           <Portfolio />
           <div className="impact-feature">
@@ -98,15 +94,10 @@ export default function Home() {
                   indicators
                 </li>
               </ul>
-              <Link
-                href="/projects/business-intelligence-platform"
-                className="text-link"
-              >
-                Explore business intelligence <ArrowUpRight size={16} />
-              </Link>
             </div>
             <ImpactPreview />
           </div>
+          <PortfolioDemos />
         </div>
       </section>
       <Industries />

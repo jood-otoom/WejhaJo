@@ -1,12 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 import {
   projectCategories,
   projects,
-  statusLabels,
   type ProjectCategory,
 } from "@/data/projects";
 import { ProjectPreview } from "./project-preview";
@@ -42,10 +39,7 @@ export function Portfolio() {
           <article className="card project-card" key={project.slug}>
             <ProjectPreview kind={project.preview} />
             <div className="project-body">
-              <div className="project-meta">
-                <span>{project.category}</span>
-                <span className="status">{statusLabels[project.status]}</span>
-              </div>
+              <span className="project-meta">{project.category}</span>
               <h3>{project.name}</h3>
               <p>{project.description}</p>
               <ul className="project-stack" aria-label="Technologies">
@@ -53,13 +47,6 @@ export function Portfolio() {
                   <li key={technology}>{technology}</li>
                 ))}
               </ul>
-              <Link
-                className="text-link"
-                href={`/projects/${project.slug}`}
-                aria-label={`View project: ${project.name}`}
-              >
-                View Project <ArrowUpRight size={16} />
-              </Link>
             </div>
           </article>
         ))}

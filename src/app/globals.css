@@ -513,15 +513,13 @@ main:focus {
   display: grid;
   gap: 0.25rem;
 }
-.purpose-grid li,
-.project-details-grid li {
+.purpose-grid li {
   display: flex;
   gap: 0.48rem;
   align-items: flex-start;
   color: var(--muted);
 }
-.purpose-grid li svg,
-.project-details-grid li svg {
+.purpose-grid li svg {
   flex: none;
   color: var(--link);
   margin-block-start: 0.25rem;
@@ -620,42 +618,15 @@ main:focus {
   opacity: 0.58;
 }
 .project-card {
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
-  transition:
-    box-shadow 180ms ease,
-    border-color 180ms ease;
-}
-.project-card:hover {
-  border-color: #a7c0e4;
-  box-shadow: 0 0.6rem 1.5rem #18376613;
 }
 .project-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  align-items: flex-start;
-  padding: 1.1rem 1.15rem 0.9rem;
+  padding: 1.1rem 1.15rem;
 }
 .project-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  column-gap: 0.6rem;
-  row-gap: 0.3rem;
-  justify-content: space-between;
-  width: 100%;
   font-weight: 750;
   font-size: 0.72rem;
   color: var(--link);
-}
-.project-meta .status {
-  padding: 0.13rem 0.42rem;
-  background: #f0f4fa;
-  color: #445a77;
-  border-radius: 0.24rem;
-  font-weight: 630;
 }
 .project-body h3 {
   margin: 0.6rem 0 0.43rem;
@@ -677,10 +648,6 @@ main:focus {
   background: #eef3fa;
   color: #415774;
   border-radius: 0.24rem;
-}
-.project-body .text-link {
-  padding-block-start: 0.65rem;
-  margin-block-start: auto;
 }
 .project-preview {
   --demo-accent: #245cbb;
@@ -892,6 +859,30 @@ main:focus {
 .impact-features svg {
   color: var(--link);
   flex: none;
+}
+.portfolio-demos {
+  display: grid;
+  gap: 0.65rem;
+  margin-block-start: 2.6rem;
+}
+.portfolio-demos > h3 {
+  margin-block-end: 0.25rem;
+}
+.portfolio-demos > details {
+  min-width: 0;
+}
+.portfolio-demos > details > summary {
+  padding: 0.65rem 0.85rem;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--link);
+  cursor: pointer;
+  font-weight: 700;
+}
+.portfolio-demos > details > summary:hover,
+.portfolio-demos > details[open] > summary {
+  background: #eaf2ff;
 }
 
 .industry-grid {
@@ -1214,73 +1205,6 @@ main:focus {
   gap: 0.9rem;
 }
 
-.project-hero {
-  background: radial-gradient(ellipse at 85% 0%, #193c78, #0e1c34 70%);
-  padding-block-start: clamp(1.9rem, 4vw, 3.5rem);
-}
-.project-hero .text-link {
-  color: #9dc6ff;
-  margin-block-end: 1.15rem;
-}
-.project-hero-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.75fr);
-  align-items: center;
-  gap: clamp(1.2rem, 4vw, 3.7rem);
-}
-.project-hero h1 {
-  font-size: clamp(2.55rem, 5.65vw, 4.85rem);
-  margin: 0.55rem 0 0.75rem;
-}
-.project-hero .project-preview {
-  min-height: 13rem;
-  border-radius: var(--radius);
-}
-.project-hero .project-stack {
-  padding-block-start: 1rem;
-}
-.project-hero .project-stack li {
-  background: #213b66;
-  color: #d0e1fb;
-}
-.project-hero figcaption {
-  margin-block-start: 0.4rem;
-  color: #c3d5ef;
-  font-size: 0.76rem;
-  text-align: end;
-}
-.project-content {
-  padding-block-start: clamp(2.8rem, 5vw, 4.4rem);
-}
-.project-details-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.65fr);
-  gap: clamp(1rem, 5vw, 3.5rem);
-  align-items: start;
-  margin-block-end: 2rem;
-}
-.project-details-grid h2,
-.project-details-grid h3 {
-  margin-block-end: 0.45rem;
-}
-.project-details-grid p + h3 {
-  margin-block-start: 1.3rem;
-}
-.project-details-grid aside {
-  padding: 1.25rem;
-}
-.project-details-grid aside ul {
-  display: grid;
-  gap: 0.55rem;
-  margin-block-start: 0.65rem;
-}
-.project-content .demo-panel,
-.project-content .preview-loading {
-  margin-block-end: 1rem;
-}
-.project-content .button:last-child {
-  margin-block-start: 0.5rem;
-}
 .legal-page {
   max-width: 58rem;
 }
@@ -1809,9 +1733,7 @@ thead th {
 @media (max-width: 42rem) {
   .story-grid,
   .purpose-grid,
-  .training,
-  .project-hero-grid,
-  .project-details-grid {
+  .training {
     grid-template-columns: minmax(0, 1fr);
   }
   .brand-strip .shell {
@@ -1828,9 +1750,6 @@ thead th {
   }
   .footer-grid > div {
     grid-column: 1 / -1;
-  }
-  .project-hero .project-preview {
-    min-height: 10rem;
   }
 }
 

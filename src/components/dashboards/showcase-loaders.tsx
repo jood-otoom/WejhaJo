@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import type { ProjectPreview } from "@/data/projects";
 
 function LoadingPreview() {
   return (
@@ -69,24 +68,37 @@ export function ImpactPreview() {
   );
 }
 
-export function ProjectShowcase({ kind }: { kind: ProjectPreview }) {
-  switch (kind) {
-    case "booking":
-      return <Booking />;
-    case "knowledge":
-      return <Knowledge />;
-    case "procurement":
-      return <Procurement />;
-    case "forecast":
-      return <Forecast />;
-    case "intelligence":
-      return (
-        <>
-          <Intelligence />
-          <ImpactPreview />
-        </>
-      );
-    default:
-      return null;
-  }
+const demos = [
+  { title: "Business intelligence dashboard", Content: Intelligence },
+  { title: "Sales forecasting dashboard", Content: Forecast },
+  { title: "Knowledge assistant", Content: Knowledge },
+  { title: "GoTime booking demo", Content: Booking },
+  { title: "Procurement workspace", Content: Procurement },
+] as const;
+
+function DemoDisclosure({ title, Content }: (typeof demos)[number]) {
+  const [open, setOpen] = useState(false);
+  return (
+    <details
+      name="portfolio-demo"
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary>{title}</summary>
+      {open && <Content />}
+    </details>
+  );
+}
+
+export function PortfolioDemos() {
+  return (
+    <section
+      className="portfolio-demos"
+      aria-labelledby="portfolio-demos-heading"
+    >
+      <h3 id="portfolio-demos-heading">Interactive demos</h3>
+      {demos.map((demo) => (
+        <DemoDisclosure key={demo.title} {...demo} />
+      ))}
+    </section>
+  );
 }

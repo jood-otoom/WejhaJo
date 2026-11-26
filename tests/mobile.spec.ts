@@ -21,7 +21,7 @@ test("supports menu disclosure, Escape and hash navigation on a phone", async ({
 });
 
 for (const width of [375, 768, 1024, 1440, 1920]) {
-  test(`fits the home and project pages at ${width}px`, async ({
+  test(`fits the home and on-page demos at ${width}px`, async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium", "Chromium viewport matrix");
@@ -49,7 +49,10 @@ for (const width of [375, 768, 1024, 1440, 1920]) {
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
-    await page.goto("/projects/business-intelligence-platform");
+    await page
+      .locator(".portfolio-demos > details > summary")
+      .filter({ hasText: "Business intelligence dashboard" })
+      .click();
     await expect(
       page.getByRole("region", {
         name: "Business intelligence dashboard",

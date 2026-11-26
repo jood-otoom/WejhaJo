@@ -1,4 +1,13 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function openDemo(page: Page, name: string) {
+  await page.goto("/#work");
+  await page
+    .locator(".portfolio-demos > details > summary")
+    .filter({ hasText: name })
+    .click();
+  return page.getByRole("region", { name, exact: true });
+}
 
 test("selects a governorate on the map, changes metric and resets", async ({
   page,
@@ -36,10 +45,7 @@ test("updates BI date and program filters and displays chart data", async ({
     if (message.type() === "error" || message.type() === "warning")
       errors.push(message.text());
   });
-  await page.goto("/projects/business-intelligence-platform");
-  const panel = page.getByRole("region", {
-    name: "Business intelligence dashboard",
-  });
+  const panel = await openDemo(page, "Business intelligence dashboard");
   await panel.getByLabel("Date range").selectOption("1");
   await panel
     .getByLabel("Program", { exact: true })
@@ -60,10 +66,7 @@ test("updates BI date and program filters and displays chart data", async ({
 test("changes sales forecast horizon and explores the interactive chart", async ({
   page,
 }) => {
-  await page.goto("/projects/sales-forecasting-system");
-  const panel = page.getByRole("region", {
-    name: "Sales forecasting dashboard",
-  });
+  const panel = await openDemo(page, "Sales forecasting dashboard");
   await panel.getByLabel("Forecast period").selectOption("6");
   await expect(panel.locator(".demo-kpi").nth(1)).toContainText("1,825");
   await panel.getByText("View forecast data").click();
@@ -79,8 +82,7 @@ test("changes sales forecast horizon and explores the interactive chart", async 
 });
 
 test("uses the knowledge chat and opens a source excerpt", async ({ page }) => {
-  await page.goto("/projects/enterprise-knowledge-assistant");
-  const panel = page.getByRole("region", { name: "Knowledge assistant" });
+  const panel = await openDemo(page, "Knowledge assistant");
   await panel
     .getByRole("button", { name: "Who approves a purchase request?" })
     .click();
@@ -98,8 +100,7 @@ test("browses, books and cancels a GoTime example slot on a phone", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto("/projects/gotime");
-  const panel = page.getByRole("region", { name: "GoTime booking demo" });
+  const panel = await openDemo(page, "GoTime booking demo");
   await panel.getByLabel("Sport").selectOption("Football");
   await expect(
     panel.getByRole("button", { name: /Capital Five-a-Side/ }),
@@ -121,8 +122,7 @@ test("browses, books and cancels a GoTime example slot on a phone", async ({
 
 test("filters procurement orders and changes data views", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto("/projects/b2b-procurement-platform");
-  const panel = page.getByRole("region", { name: "Procurement workspace" });
+  const panel = await openDemo(page, "Procurement workspace");
   await panel.getByLabel("Order status").selectOption("In transit");
   await expect(panel.getByRole("row")).toHaveCount(2);
   await expect(panel.getByRole("row", { name: /PO-1043/ })).toBeVisible();

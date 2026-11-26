@@ -15,16 +15,9 @@ export type ProjectPreview =
   | "procurement"
   | "forecast"
   | "corporate"
-  | "commerce"
   | "intelligence"
   | "documents"
   | "operations";
-
-export const statusLabels: Record<ProjectStatus, string> = {
-  "company-product": "Wejha product",
-  "completed-project": "Completed project",
-  "solution-showcase": "Solution showcase",
-};
 
 export interface Project {
   slug: string;
@@ -161,26 +154,6 @@ export const projects: readonly Project[] = [
       "Give visitors a clear way to learn about the organization and give staff ownership of everyday updates.",
   },
   {
-    slug: "e-commerce-platform",
-    name: "E-Commerce Platform",
-    category: "Web Applications",
-    status: "solution-showcase",
-    preview: "commerce",
-    description:
-      "A digital storefront with product, order and inventory management.",
-    challenge:
-      "A business needs to keep the storefront, available stock and order fulfillment in sync.",
-    capabilities: [
-      "Product catalog",
-      "Checkout workflows",
-      "Order tracking",
-      "Inventory management",
-    ],
-    technologies: ["Next.js", "Laravel", "PostgreSQL"],
-    value:
-      "Make buying simpler for customers and give operations staff clearer visibility into stock and orders.",
-  },
-  {
     slug: "business-intelligence-platform",
     name: "Business Intelligence Platform",
     category: "Data & Analytics",
@@ -241,6 +214,3 @@ export const projects: readonly Project[] = [
       "Help staff see what needs attention and give coordinators a shared view of progress in the field.",
   },
 ];
-
-export const getProject = (slug: string) =>
-  projects.find((project) => project.slug === slug);

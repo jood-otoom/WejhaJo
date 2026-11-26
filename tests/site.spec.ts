@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { site } from "../src/config/site";
 import { projectCategories, projects } from "../src/data/projects";
 
-test("filters all portfolio categories and opens each project detail", async ({
+test("filters all nine projects without linking the cards or showing status badges", async ({
   page,
 }) => {
   await page.goto("/");
@@ -24,20 +24,18 @@ test("filters all portfolio categories and opens each project detail", async ({
       ).toBeVisible();
   }
   await filters.getByRole("button", { name: "All", exact: true }).click();
-  await expect(grid.getByRole("article")).toHaveCount(10);
-  await grid.getByRole("link", { name: "View project: GoTime" }).click();
-  await expect(page).toHaveURL(/\/projects\/gotime$/);
-  for (const { slug, name } of projects) {
-    await page.goto(`/projects/${slug}`);
-    await expect(page.getByRole("heading", { name, level: 1 })).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Intended business value" }),
-    ).toBeVisible();
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
-      "href",
-      `https://wejhajo.org/projects/${slug}`,
-    );
-  }
+  await expect(grid.getByRole("article")).toHaveCount(9);
+  await expect(
+    grid.getByText("E-Commerce Platform", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    grid.getByText(/solution showcase|wejha product|view project/i),
+  ).toHaveCount(0);
+  await expect(grid.getByRole("link")).toHaveCount(0);
+  await expect(grid.getByRole("button")).toHaveCount(0);
+  const portfolioUrl = page.url();
+  await grid.getByRole("heading", { name: "GoTime", exact: true }).click();
+  await expect(page).toHaveURL(portfolioUrl);
 });
 
 test("navigates by keyboard, updates section state and changes process stage", async ({
@@ -98,11 +96,7 @@ test("checks links, social images and absence of contact credentials in public o
       expect((await request.get(path)).ok(), path).toBe(true);
     if (url.startsWith("mailto:")) expect(url).toBe(`mailto:${site.email}`);
   }
-  for (const path of [
-    "/opengraph-image",
-    "/projects/gotime/opengraph-image",
-    "/brand/favicon.png",
-  ]) {
+  for (const path of ["/opengraph-image", "/brand/favicon.png"]) {
     const asset = await request.get(path);
     expect(asset.ok(), path).toBe(true);
     expect(asset.headers()["content-type"]).toContain("image/png");
@@ -115,7 +109,16 @@ test("checks links, social images and absence of contact credentials in public o
     /official@gotimejo\.com|CONTACT_EMAIL|CONTACT_CLIENT_LIMIT|CONTACT_ENDPOINT_LIMIT/,
   );
   expect(responses).toEqual([]);
-  expect((await request.get("/projects/unknown-project")).status()).toBe(404);
+  for (const slug of [
+    ...projects.map(({ slug }) => slug),
+    "e-commerce-platform",
+  ]) {
+    const path = `/projects/${slug}`;
+    expect((await request.get(path)).status(), path).toBe(404);
+  }
+  expect((await request.get("/projects/gotime/opengraph-image")).status()).toBe(
+    404,
+  );
   const robots = await request.get("/robots.txt");
   expect(robots.ok()).toBe(true);
   expect(await robots.text()).toContain(
@@ -125,7 +128,8 @@ test("checks links, social images and absence of contact credentials in public o
   expect(sitemap.ok()).toBe(true);
   const xml = await sitemap.text();
   expect(xml).toContain("<loc>https://wejhajo.org/</loc>");
-  expect(xml.match(/<loc>/g)).toHaveLength(13);
+  expect(xml.match(/<loc>/g)).toHaveLength(3);
+  expect(xml).not.toContain("/projects/");
 });
 
 test("shows the same official email in contact links, policies, and metadata", async ({

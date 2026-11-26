@@ -11,7 +11,6 @@ import {
   MessageSquare,
   Package,
   Search,
-  ShoppingBag,
   Sparkles,
   Timer,
   Trophy,
@@ -56,12 +55,6 @@ const details = {
     icon: Globe2,
     tone: "purple",
   },
-  commerce: {
-    title: "Store manager",
-    label: "Product catalog",
-    icon: ShoppingBag,
-    tone: "green",
-  },
   intelligence: {
     title: "Reporting studio",
     label: "Performance overview",
@@ -95,11 +88,6 @@ const lists = {
     ["Home", "Published"],
     ["Services", "Published"],
     ["About", "Draft"],
-  ],
-  commerce: [
-    ["Canvas tote", "In stock"],
-    ["Travel mug", "Low stock"],
-    ["Desk organizer", "In stock"],
   ],
   documents: [
     ["Invoice number", "INV-042"],
