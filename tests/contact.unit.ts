@@ -1,21 +1,17 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/contact/route";
-import { getContactConfig, type ContactConfig } from "@/lib/contact-config";
-import { sendContact } from "@/lib/email";
-import { limitContact } from "@/lib/rate-limit";
 import { contactSchema } from "@/lib/validation";
 
-vi.mock("@/lib/contact-config", () => ({ getContactConfig: vi.fn() }));
-vi.mock("@/lib/rate-limit", () => ({ limitContact: vi.fn() }));
-vi.mock("@/lib/email", () => ({ sendContact: vi.fn() }));
+vi.mock("@opennextjs/cloudflare", () => ({ getCloudflareContext: vi.fn() }));
 
-const config: ContactConfig = {
-  CONTACT_RECIPIENT_EMAIL: "inquiries@example.com",
-  CONTACT_FROM_EMAIL: "website@example.com",
-  RESEND_API_KEY: "test",
-  UPSTASH_REDIS_REST_URL: "https://redis.example.com",
-  UPSTASH_REDIS_REST_TOKEN: "test",
-  CONTACT_HASH_SECRET: "test-signing-secret-not-for-runtime",
+const send = vi.fn();
+const clientLimit = vi.fn();
+const endpointLimit = vi.fn();
+const env = {
+  CONTACT_EMAIL: { send },
+  CONTACT_CLIENT_LIMIT: { limit: clientLimit },
+  CONTACT_ENDPOINT_LIMIT: { limit: endpointLimit },
 };
 const inquiry = {
   name: " Noor   Ahmad ",
@@ -36,17 +32,25 @@ function request(body: string, headers: Record<string, string> = {}) {
   });
 }
 
+function submit(fields = {}, headers = {}) {
+  return POST(request(JSON.stringify({ ...inquiry, ...fields }), headers));
+}
+
+function mockBindings(env: CloudflareEnv) {
+  // The contact handler consumes only the runtime environment.
+  vi.mocked(getCloudflareContext).mockReturnValue({
+    env,
+    cf: undefined,
+    ctx: {} as ReturnType<typeof getCloudflareContext>["ctx"],
+  });
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(getContactConfig).mockReturnValue(config);
-  vi.mocked(limitContact).mockResolvedValue({
-    success: true,
-    limit: 5,
-    remaining: 4,
-    reset: Date.now() + 1000,
-    pending: Promise.resolve(),
-  });
-  vi.mocked(sendContact).mockResolvedValue(true);
+  mockBindings(env);
+  clientLimit.mockResolvedValue({ success: true });
+  endpointLimit.mockResolvedValue({ success: true });
+  send.mockResolvedValue({ messageId: "test-accepted-id" });
 });
 
 describe("contact validation", () => {
@@ -77,33 +81,34 @@ describe("contact validation", () => {
 });
 
 describe("contact route", () => {
-  it("returns success after rate checks and provider acceptance", async () => {
-    const response = await POST(request(JSON.stringify(inquiry)));
+  it("checks the Cloudflare client and endpoint limits before sending a normalized inquiry", async () => {
+    const response = await submit({}, { "cf-connecting-ip": "192.0.2.1" });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true });
-    expect(sendContact).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: "Noor Ahmad",
-        email: inquiry.email,
-        description: expect.stringContaining("\n"),
-      }),
-      config,
-    );
-    expect(vi.mocked(sendContact).mock.calls[0][0]).not.toHaveProperty(
-      "website",
-    );
     expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(clientLimit).toHaveBeenCalledWith({ key: "192.0.2.1" });
+    expect(endpointLimit).toHaveBeenCalledWith({ key: "contact" });
+    expect(endpointLimit).toHaveBeenCalledBefore(send);
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        replyTo: inquiry.email,
+        text: expect.stringMatching(/Name: Noor Ahmad\n/),
+      }),
+    );
   });
 
   it("matches the browser origin when the runtime normalizes the request hostname", async () => {
-    const response = await POST(
-      request(JSON.stringify(inquiry), {
+    const response = await submit(
+      { description: "I would like help with a new on-site workflow." },
+      {
         host: "127.0.0.1:3000",
         origin: "http://127.0.0.1:3000",
         "sec-fetch-site": "same-origin",
-      }),
+        "x-forwarded-for": "192.0.2.1",
+      },
     );
     expect(response.status).toBe(200);
+    expect(clientLimit).toHaveBeenCalledWith({ key: "shared" });
   });
 
   it("blocks cross-site and unsupported submissions", async () => {
@@ -113,64 +118,96 @@ describe("contact route", () => {
     expect(
       (await POST(request("{}", { "content-type": "text/plain" }))).status,
     ).toBe(415);
-    expect(sendContact).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
   });
 
   it("rejects malformed, oversized and invalid bodies", async () => {
     expect((await POST(request("{bad"))).status).toBe(400);
     expect((await POST(request("x".repeat(24_001)))).status).toBe(413);
-    const invalid = await POST(
-      request(JSON.stringify({ ...inquiry, email: "bad" })),
-    );
+    const invalid = await submit({ email: "bad" });
     expect(invalid.status).toBe(422);
     expect((await invalid.json()).fields.email).toEqual([
       "Enter a valid email address.",
     ]);
-    expect(sendContact).not.toHaveBeenCalled();
+    expect((await submit({ to: "another@example.com" })).status).toBe(422);
+    expect(send).not.toHaveBeenCalled();
   });
 
   it("blocks honeypot entries", async () => {
-    expect(
-      (await POST(request(JSON.stringify({ ...inquiry, website: "bot" }))))
-        .status,
-    ).toBe(400);
-    expect(limitContact).not.toHaveBeenCalled();
-    expect(sendContact).not.toHaveBeenCalled();
+    expect((await submit({ website: "bot" })).status).toBe(400);
+    expect(clientLimit).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
   });
 
-  it("returns an accurate 503 when configuration is missing or the limiter is unavailable", async () => {
-    vi.mocked(getContactConfig).mockReturnValueOnce(null);
-    expect((await POST(request(JSON.stringify(inquiry)))).status).toBe(503);
-    vi.mocked(limitContact).mockRejectedValueOnce(new Error("test"));
-    expect((await POST(request(JSON.stringify(inquiry)))).status).toBe(503);
-    expect(sendContact).not.toHaveBeenCalled();
-  });
+  it.each(Object.keys(env) as (keyof typeof env)[])(
+    "returns 503 when the %s binding is missing",
+    async (name) => {
+      mockBindings({ ...env, [name]: undefined });
+      expect((await submit()).status).toBe(503);
+      expect(send).not.toHaveBeenCalled();
+    },
+  );
 
-  it("reports throttling with a retry interval", async () => {
-    vi.mocked(limitContact).mockResolvedValue({
-      success: false,
-      limit: 5,
-      remaining: 0,
-      reset: Date.now() + 60_000,
-      pending: Promise.resolve(),
+  it("returns 503 outside the Workers runtime", async () => {
+    vi.mocked(getCloudflareContext).mockImplementation(() => {
+      throw new Error("Missing Worker context");
     });
-    const response = await POST(request(JSON.stringify(inquiry)));
-    expect(response.status).toBe(429);
-    expect(Number(response.headers.get("retry-after"))).toBeGreaterThan(0);
-    expect(sendContact).not.toHaveBeenCalled();
+    expect((await submit()).status).toBe(503);
+    expect(send).not.toHaveBeenCalled();
   });
 
-  it("never claims delivery if the provider rejects or fails", async () => {
-    vi.mocked(sendContact)
-      .mockResolvedValueOnce(false)
-      .mockRejectedValueOnce(new Error("test"));
+  it("fails closed when a rate limiter is unavailable", async () => {
+    endpointLimit.mockRejectedValueOnce(new Error("test"));
+    expect((await submit()).status).toBe(503);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("reports per-client and endpoint throttling with a retry interval", async () => {
+    clientLimit.mockResolvedValueOnce({ success: false });
+    const clientResponse = await submit();
+    expect(clientResponse.status).toBe(429);
+    expect(clientResponse.headers.get("retry-after")).toBe("60");
+    expect(endpointLimit).not.toHaveBeenCalled();
+
+    endpointLimit.mockResolvedValueOnce({ success: false });
+    const endpointResponse = await submit();
+    expect(endpointResponse.status).toBe(429);
+    expect(endpointResponse.headers.get("retry-after")).toBe("60");
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("never claims success if the binding rejects or returns no acceptance ID", async () => {
+    send.mockResolvedValueOnce({}).mockRejectedValueOnce(
+      Object.assign(new Error("private payload"), {
+        code: "E_RECIPIENT_NOT_ALLOWED",
+      }),
+    );
+    const fields = {
+      description: "Please help us plan a new purchase process.",
+    };
     for (let attempt = 0; attempt < 2; attempt++) {
-      const response = await POST(request(JSON.stringify(inquiry)));
+      const response = await submit(fields);
       expect(response.status).toBe(502);
       expect(await response.json()).toEqual({
         ok: false,
-        message: expect.any(String),
+        message:
+          "We couldn’t send your inquiry right now. Please try again later.",
       });
     }
+    expect((await submit(fields)).status).toBe(200);
+  });
+
+  it("returns 409 for an already accepted inquiry without sending again", async () => {
+    const fields = {
+      description: "We need a duplicate-safe contact workflow.",
+    };
+    expect((await submit(fields)).status).toBe(200);
+    const response = await submit(fields);
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      ok: false,
+      message: "This inquiry was already sent.",
+    });
+    expect(send).toHaveBeenCalledTimes(1);
   });
 });

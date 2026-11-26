@@ -112,7 +112,7 @@ test("checks links, social images and absence of contact credentials in public o
   expect(brand.headers()["content-type"]).toContain("image/webp");
   const html = await page.content();
   expect(html).not.toMatch(
-    /RESEND_API_KEY|UPSTASH_REDIS_REST_TOKEN|CONTACT_HASH_SECRET/,
+    /official@gotimejo\.com|CONTACT_EMAIL|CONTACT_CLIENT_LIMIT|CONTACT_ENDPOINT_LIMIT/,
   );
   expect(responses).toEqual([]);
   expect((await request.get("/projects/unknown-project")).status()).toBe(404);

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { siteUrl } from "@/config/site";
-import { getContactConfig } from "@/lib/contact-config";
+import { getContactBindings } from "@/lib/contact-bindings";
 import { sendContact } from "@/lib/email";
-import { limitContact } from "@/lib/rate-limit";
+import { contactRetryAfterSeconds, limitContact } from "@/lib/rate-limit";
 import { contactSchema, type ContactResponse } from "@/lib/validation";
 
 const maximumBytes = 24_000;
@@ -101,12 +101,14 @@ export async function POST(request: Request) {
       400,
     );
 
-  const config = getContactConfig();
-  if (!config) return reply({ ok: false, message: unavailable }, 503);
+  const bindings = getContactBindings();
+  if (!bindings) {
+    console.error("Contact Worker bindings missing");
+    return reply({ ok: false, message: unavailable }, 503);
+  }
 
   try {
-    const limit = await limitContact(request, config);
-    if (!limit.success) {
+    if (!(await limitContact(request, bindings))) {
       return reply(
         {
           ok: false,
@@ -114,9 +116,7 @@ export async function POST(request: Request) {
         },
         429,
         {
-          "Retry-After": String(
-            Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000)),
-          ),
+          "Retry-After": String(contactRetryAfterSeconds),
         },
       );
     }
@@ -126,10 +126,30 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (await sendContact(inquiry, config)) return reply({ ok: true }, 200);
-    console.error("Contact provider did not accept an inquiry");
-  } catch {
-    console.error("Contact provider unavailable");
+    const result = await sendContact(inquiry, bindings.email);
+    if (result === "accepted") return reply({ ok: true }, 200);
+    if (result === "duplicate" || result === "pending") {
+      return reply(
+        {
+          ok: false,
+          message:
+            result === "duplicate"
+              ? "This inquiry was already sent."
+              : "This inquiry is already being sent. Please wait a moment.",
+        },
+        409,
+      );
+    }
+    if (result === "busy")
+      return reply({ ok: false, message: unavailable }, 503);
+    console.error("Cloudflare Email Sending did not return an acceptance ID");
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "code" in error ? error.code : null;
+    console.error(
+      "Cloudflare Email Sending failed",
+      typeof code === "string" && /^E_[A-Z_]+$/.test(code) ? code : "",
+    );
   }
   return reply({ ok: false, message: unavailable }, 502);
 }

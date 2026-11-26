@@ -1,21 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { sendContact } from "@/lib/email";
 
-const { send } = vi.hoisted(() => ({ send: vi.fn() }));
-vi.mock("resend", () => ({
-  Resend: class {
-    emails = { send };
-  },
-}));
-
-const config = {
-  CONTACT_RECIPIENT_EMAIL: "team@example.com",
-  CONTACT_FROM_EMAIL: "website@example.com",
-  RESEND_API_KEY: "test",
-  UPSTASH_REDIS_REST_URL: "https://redis.example.com",
-  UPSTASH_REDIS_REST_TOKEN: "test",
-  CONTACT_HASH_SECRET: "test-signing-secret-not-for-runtime",
-};
 const inquiry = {
   name: "Noor Ahmad",
   email: "noor@example.com",
@@ -25,36 +10,45 @@ const inquiry = {
   description: "We need scheduling.",
 };
 
-describe("provider request", () => {
-  it("uses an approved From address, visitor Reply-To and stable non-PII idempotency key", async () => {
-    send.mockResolvedValue({ data: { id: "test-id" }, error: null });
-    await expect(sendContact(inquiry, config)).resolves.toBe(true);
-    await sendContact(inquiry, config);
-    await sendContact(
-      { ...inquiry, description: "A different inquiry." },
-      config,
-    );
-    const [message, options] = send.mock.calls[0];
-    expect(message).toMatchObject({
-      to: config.CONTACT_RECIPIENT_EMAIL,
-      from: `Wejha Website <${config.CONTACT_FROM_EMAIL}>`,
+describe("Cloudflare email request", () => {
+  it("uses the fixed verified destination, company sender and visitor Reply-To", async () => {
+    const send = vi.fn().mockResolvedValue({ messageId: "test-id" });
+    await expect(sendContact(inquiry, { send })).resolves.toBe("accepted");
+    expect(send).toHaveBeenCalledWith({
+      to: "official@gotimejo.com",
+      from: { email: "official@wejhajo.org", name: "Wejha Website" },
       replyTo: inquiry.email,
+      subject: "New Wejha website inquiry",
+      text: expect.stringContaining(inquiry.description),
     });
-    expect(message).not.toHaveProperty("html");
-    expect(options.idempotencyKey).toMatch(/^wejha-inquiry\/[a-f0-9]{64}$/);
-    expect(send.mock.calls[1][1].idempotencyKey).toBe(options.idempotencyKey);
-    expect(send.mock.calls[2][1].idempotencyKey).not.toBe(
-      options.idempotencyKey,
-    );
   });
 
-  it("requires an acceptance ID", async () => {
-    send.mockResolvedValue({
-      data: null,
-      error: { name: "provider_error" },
+  it("suppresses in-flight and recently accepted duplicates on the same isolate", async () => {
+    const message = { ...inquiry, description: "Handle duplicate requests." };
+    let accept: (result: { messageId: string }) => void = () => {};
+    const promise = new Promise<{ messageId: string }>((resolve) => {
+      accept = resolve;
     });
-    expect(await sendContact(inquiry, config)).toBe(false);
-    send.mockResolvedValue({ data: {}, error: null });
-    expect(await sendContact(inquiry, config)).toBe(false);
+    const binding = { send: vi.fn(() => promise) };
+    const first = sendContact(message, binding);
+    await expect(sendContact(message, binding)).resolves.toBe("pending");
+    accept({ messageId: "test-id" });
+    await expect(first).resolves.toBe("accepted");
+    await expect(sendContact(message, binding)).resolves.toBe("duplicate");
+    expect(binding.send).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows the same inquiry to be sent after the duplicate window", async () => {
+    vi.useFakeTimers();
+    try {
+      const message = { ...inquiry, description: "Test the duplicate window." };
+      const send = vi.fn().mockResolvedValue({ messageId: "test-id" });
+      await expect(sendContact(message, { send })).resolves.toBe("accepted");
+      vi.advanceTimersByTime(60_000);
+      await expect(sendContact(message, { send })).resolves.toBe("accepted");
+      expect(send).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

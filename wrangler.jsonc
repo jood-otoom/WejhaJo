@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "wejha-website",
+  "name": "wejhajo",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
@@ -8,6 +8,25 @@
     "binding": "ASSETS",
     "directory": ".open-next/assets",
   },
+  "send_email": [
+    {
+      "name": "CONTACT_EMAIL",
+      "destination_address": "official@gotimejo.com",
+      "allowed_sender_addresses": ["official@wejhajo.org"],
+    },
+  ],
+  "ratelimits": [
+    {
+      "name": "CONTACT_CLIENT_LIMIT",
+      "namespace_id": "2026112601",
+      "simple": { "limit": 3, "period": 60 },
+    },
+    {
+      "name": "CONTACT_ENDPOINT_LIMIT",
+      "namespace_id": "2026112602",
+      "simple": { "limit": 20, "period": 60 },
+    },
+  ],
   "routes": [{ "pattern": "wejhajo.org", "custom_domain": true }],
   "workers_dev": false,
   "preview_urls": false,

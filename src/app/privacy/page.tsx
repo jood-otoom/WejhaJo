@@ -33,14 +33,13 @@ export default function Privacy() {
       <h2>Service providers and website security</h2>
       <p>
         Cloudflare hosts this website and may process technical request data for
-        hosting and security. Resend processes the inquiry and your reply
-        address to send it to our company address. Cloudflare Email Routing
-        forwards those messages to our inbox. The website does not store inquiry
-        messages in a database. Authorized staff may retain inquiry
-        correspondence in the company inbox. Upstash receives a keyed identifier
-        derived from the request IP address and stores short-lived counters for
-        abuse prevention. Portfolio previews use local sample data and do not
-        send demo inputs to a service provider.
+        hosting and security. Cloudflare Email Sending delivers form inquiries
+        to our company inbox with your email address set for replies. Cloudflare
+        also uses the request IP address for short-lived abuse prevention
+        counters. The website does not store inquiry messages in a database.
+        Authorized staff may retain inquiry correspondence in the company inbox.
+        Portfolio previews use local sample data and do not send demo inputs to
+        a service provider.
       </p>
       <h2>Retention and access</h2>
       <p>

@@ -1,29 +1,32 @@
-import { createHmac } from "node:crypto";
-import { Resend } from "resend";
-import type { ContactConfig } from "./contact-config";
+import { createHash } from "node:crypto";
+import { site } from "@/config/site";
+import type { ContactEmailBinding } from "@/types/cloudflare";
 import type { ContactInquiry } from "./validation";
+
+// Keep the private destination aligned with the restriction in wrangler.jsonc.
+const recipient = "official@gotimejo.com";
+const duplicateWindowMs = 60_000;
+const maximumTracked = 128;
+// Retain fingerprints on this isolate only. Each request awaits its own send.
+const pending = new Set<string>();
+const recentlyAccepted = new Map<string, number>();
 
 export async function sendContact(
   inquiry: ContactInquiry,
-  config: ContactConfig,
-): Promise<boolean> {
-  const fingerprint = createHmac("sha256", config.CONTACT_HASH_SECRET)
-    .update(
-      JSON.stringify([
-        inquiry.name,
-        inquiry.email,
-        inquiry.organization,
-        inquiry.phone,
-        inquiry.service,
-        inquiry.description,
-      ]),
-    )
+  email: ContactEmailBinding,
+) {
+  const fingerprint = createHash("sha256")
+    .update(JSON.stringify(inquiry))
     .digest("hex");
-  const resend = new Resend(config.RESEND_API_KEY);
-  const result = await resend.emails.send(
-    {
-      from: `Wejha Website <${config.CONTACT_FROM_EMAIL}>`,
-      to: config.CONTACT_RECIPIENT_EMAIL,
+  if (pending.has(fingerprint)) return "pending";
+  if ((recentlyAccepted.get(fingerprint) ?? 0) > Date.now()) return "duplicate";
+  if (pending.size >= maximumTracked) return "busy";
+
+  pending.add(fingerprint);
+  try {
+    const result = await email.send({
+      from: { email: site.email, name: "Wejha Website" },
+      to: recipient,
       replyTo: inquiry.email,
       subject: "New Wejha website inquiry",
       text: [
@@ -35,11 +38,17 @@ export async function sendContact(
         "",
         inquiry.description,
       ].join("\n"),
-    },
-    {
-      idempotencyKey: `wejha-inquiry/${fingerprint}`,
-      signal: AbortSignal.timeout(10_000),
-    },
-  );
-  return !result.error && Boolean(result.data?.id);
+    });
+    if (!result?.messageId?.trim()) return "unconfirmed";
+
+    recentlyAccepted.delete(fingerprint);
+    const oldest = recentlyAccepted.keys().next().value;
+    if (recentlyAccepted.size >= maximumTracked && oldest) {
+      recentlyAccepted.delete(oldest);
+    }
+    recentlyAccepted.set(fingerprint, Date.now() + duplicateWindowMs);
+    return "accepted";
+  } finally {
+    pending.delete(fingerprint);
+  }
 }

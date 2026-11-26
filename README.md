@@ -18,24 +18,15 @@ npm run build:worker
 npm run preview
 ```
 
-Open [localhost:8787](http://localhost:8787). The preview runs the built Worker in workerd. Portfolio previews work without credentials. A valid inquiry gets a temporary-unavailable response until contact configuration is present.
+Open [localhost:8787](http://localhost:8787). The preview runs the built Worker in workerd. Wrangler simulates the native email binding and prints test messages to its terminal. Use synthetic data in preview. Standalone Next.js can render the site and validate form data, and valid inquiries require the Worker runtime.
 
-## Runtime secrets
+## Contact form bindings
 
-On the `wejha-website` Worker, add these as **Secrets** under **Settings → Variables & Secrets**. Keep credential values out of GitHub and the Workers Builds variables. The app reads them at request time, so the Worker build needs no secrets. For local testing, copy `.env.example` to `.dev.vars` for Wrangler or `.env.local` for `next dev`. Use sandbox credentials for local testing. Standalone `next dev` can use a test mailbox.
+The form uses Cloudflare Email Sending and Rate Limiting through OpenNext’s request context. No environment variables, credentials, or local secret files are required for the form.
 
-| Variable                   | Value                                                                         |
-| -------------------------- | ----------------------------------------------------------------------------- |
-| `CONTACT_RECIPIENT_EMAIL`  | `official@wejhajo.org`.                                                       |
-| `CONTACT_FROM_EMAIL`       | Bare sender email address on a domain or subdomain verified in Resend.        |
-| `RESEND_API_KEY`           | Resend key with send access for the verified sender domain.                   |
-| `UPSTASH_REDIS_REST_URL`   | The Upstash Redis HTTPS REST endpoint.                                        |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash REST token with write access.                                         |
-| `CONTACT_HASH_SECRET`      | A stable signing secret. Generate a random value with `openssl rand -hex 32`. |
-
-Production builds route inquiries to the official address in `src/config/site.ts` even when the Worker still has an older recipient binding. In **Settings → Variables & Secrets**, set `CONTACT_RECIPIENT_EMAIL` to `official@wejhajo.org` so the dashboard matches. Cloudflare Email Routing forwards incoming messages from that address to the company inbox. The Resend sender and the visitor’s Reply-To address are configured separately.
-
-The inquiry endpoint uses Cloudflare’s `CF-Connecting-IP` in the Worker, hashes visitor identifiers before sending them to Upstash, and uses a shared fallback when no trusted IP is available. Use a separate Upstash database for local provider tests to keep production counters isolated. Requests are limited to five per visitor per 15 minutes and 80 total per hour. The same signing secret also generates email idempotency keys. [Cloudflare request headers](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-connecting-ip) · [Worker secrets](https://developers.cloudflare.com/workers/configuration/secrets/)
+- `CONTACT_EMAIL` restricts inquiry delivery to the single verified destination in `wrangler.jsonc`. The sender is `official@wejhajo.org`, and the visitor’s validated address is the Reply-To. The public address still receives mail through the existing Email Routing rule. [Send bindings](https://developers.cloudflare.com/email-service/configuration/send-bindings/) · [Verified destinations and Workers Free](https://developers.cloudflare.com/email-service/configuration/destination-addresses/)
+- `CONTACT_CLIENT_LIMIT` permits three eligible submissions per 60 seconds per client IP. `CONTACT_ENDPOINT_LIMIT` permits 20 per 60 seconds across clients served by the same Cloudflare location. Clients without a valid `CF-Connecting-IP` share a fallback key. The counters are approximate and location-specific. A strict global quota would require an authoritative shared counter such as a Durable Object. [Workers Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)
+- The browser prevents repeated clicks. A bounded, in-memory fingerprint check suppresses concurrent and recently accepted copies on the same Worker isolate for up to 60 seconds after acceptance. The fingerprints and client IP keys are used inside Cloudflare, so no signing secret is needed. A failed send can be retried subject to the rate limits.
 
 ## Quality checks
 
@@ -49,24 +40,25 @@ npx playwright install chromium webkit
 npm run test:e2e
 ```
 
-The Playwright suite starts the built Worker with Wrangler on port 3100. Run it without local contact secrets to exercise the unconfigured endpoint. It covers navigation and accessibility, all project routes and filters, the interactive portfolio, responsive layouts, and contact form behavior. GitHub Actions runs the same checks on pushes and pull requests.
+The Playwright suite starts the built Worker with Wrangler on port 3100. It exercises the local email simulator without credentials. It also covers navigation and accessibility, all project routes and filters, the interactive portfolio, responsive layouts, and contact form behavior. GitHub Actions runs the same checks on pushes and pull requests.
 
 ## Cloudflare Workers deployment
 
-1. In Cloudflare, open **Workers & Pages → Create → Import a repository** or connect an existing `wejha-website` Worker under **Settings → Build**. Give Cloudflare’s GitHub app access to the private `jood-otoom/WejhaJo` repository. Use the following Workers Builds settings. [Connect a repository and configure Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
+1. Keep the existing GitHub connection on **Workers & Pages → wejhajo → Settings → Build**. Cloudflare’s GitHub app needs access to the private `jood-otoom/WejhaJo` repository. Use the following Workers Builds settings. [Connect a repository and configure Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
 
    | Setting                      | Value                  |
    | ---------------------------- | ---------------------- |
-   | Worker name                  | `wejha-website`        |
+   | Worker name                  | `wejhajo`              |
    | Production branch            | `main`                 |
    | Root directory               | Repository root        |
    | Build command                | `npm run build:worker` |
    | Deploy command               | `npm run deploy`       |
    | Non-production branch builds | Off                    |
 
-2. Review the Privacy Policy and Terms of Use before publishing. Verify the sending domain in Resend, provision Upstash Redis, and set the Worker’s runtime settings above. The first deploy can run before those secrets are set. The contact endpoint returns 503 until configuration is complete. [Resend domain setup](https://resend.com/docs/dashboard/domains/introduction) · [Upstash setup](https://upstash.com/docs/redis/sdks/ratelimit-ts/gettingstarted)
-3. Confirm the `wejhajo.org` zone is active in the same Cloudflare account. The first deployment attaches the apex as a Worker Custom Domain using `wrangler.jsonc`. Review any existing records or routes on that hostname before authorizing the change. Cloudflare creates the DNS record and manages TLS for the Custom Domain. [Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
-4. After deployment, verify the HTTPS homepage, canonical metadata, sitemap and a project detail on the apex domain. Submit a real test inquiry and verify Resend acceptance, inbox receipt, and Reply-To behavior.
+2. In the same Cloudflare account, open **Compute → Email Service → Email Routing → Destination Addresses** and confirm the address pinned in `wrangler.jsonc` is **Verified**. Workers Builds provisions the three contact bindings from the repository. [Destination addresses](https://developers.cloudflare.com/email-service/configuration/destination-addresses/)
+3. Keep `wejhajo.org` attached to the Worker under **Settings → Domains & Routes**. Keep the existing inbound routing rule for the public address. Verified-destination sends are available on Workers Free with Email Routing. If the Worker reports a sender-domain or setup error, open **Compute → Email Service → Email Sending → Onboard Domain**, select `wejhajo.org`, review the DNS records, and complete onboarding if offered on the current plan. [Email Sending setup](https://developers.cloudflare.com/email-service/get-started/send-emails/) · [Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
+4. After deployment, submit a labeled test inquiry on the live site and confirm inbox receipt and Reply-To. A successful form response means Cloudflare accepted the request. If there is a failure, look for the Email Sending error code in the Worker logs. With Email Sending enabled, check the Email Service Activity log for the delivery status.
+5. In **wejhajo → Settings → Variables & Secrets**, remove any legacy contact provider credentials, sender and recipient variables, and signing secret after you confirm the updated Worker is live. There are no replacement values to enter.
 
 Cloudflare Workers Builds runs the build and deploy commands on pushes to `main` after you connect the repository. For an authorized manual deployment, run `npm ci`, `npm run build:worker`, and `npm run deploy` in that order using a Wrangler-authenticated account. The deploy command publishes the existing Worker build. [OpenNext build and deploy commands](https://opennext.js.org/cloudflare/howtos/dev-deploy)
 
@@ -76,4 +68,4 @@ Cloudflare Workers Builds runs the build and deploy commands on pushes to `main`
 - Edit services, industries, process, and technologies under `src/data`. Showcase datasets are in `src/data/showcases.ts`. The Jordan map uses bundled governorate data with attribution under `public/maps`.
 - Maintain the optimized logo assets in `public/brand`. The toolkit uses the original two-snake mark to identify Python. [Python logo guidelines](https://www.python.org/community/logos/)
 - Shared language, direction, and the canonical URL live in `src/config/site.ts`. OpenNext serves the prerendered pages, social images, and lightweight brand files from Workers Static Assets.
-- The contact API lives at `src/app/api/contact/route.ts`. Redis stores short-lived abuse counters and Resend processes plain-text inquiry delivery. Inquiry messages go to the configured mailbox.
+- The contact API lives at `src/app/api/contact/route.ts`. Cloudflare handles short-lived abuse counters and plain-text delivery to the configured mailbox.
