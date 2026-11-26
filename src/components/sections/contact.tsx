@@ -1,5 +1,6 @@
-import { MapPin } from "lucide-react";
+import { Mail, MapPin } from "lucide-react";
 import Link from "next/link";
+import { CompanyEmailLink } from "@/components/layout/company-email-link";
 import { ContactForm } from "@/components/forms/contact-form";
 import { site } from "@/config/site";
 import { SectionHeading } from "./section-heading";
@@ -24,6 +25,10 @@ export function Contact() {
           </SectionHeading>
           <p className="contact-location">
             <MapPin size={20} aria-hidden="true" /> {site.location}
+          </p>
+          <p className="contact-location contact-email">
+            <Mail size={20} aria-hidden="true" />
+            <CompanyEmailLink />
           </p>
           <p className="contact-privacy">
             We use the details you share to respond to your inquiry.{" "}

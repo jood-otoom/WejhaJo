@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CompanyEmailLink } from "@/components/layout/company-email-link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -41,9 +42,9 @@ export default function Terms() {
       <h2>Inquiries</h2>
       <p>
         Submitting an inquiry starts a conversation. Any services, timing or
-        deliverables are agreed separately. Use the{" "}
-        <Link href="/#contact">contact form</Link> if you have a question about
-        these terms.
+        deliverables are agreed separately. For questions about these terms,
+        email <CompanyEmailLink /> or use the{" "}
+        <Link href="/#contact">contact form</Link>.
       </p>
     </article>
   );

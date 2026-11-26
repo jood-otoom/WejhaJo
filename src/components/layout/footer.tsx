@@ -1,5 +1,6 @@
-import { MapPin } from "lucide-react";
+import { Mail, MapPin } from "lucide-react";
 import Link from "next/link";
+import { CompanyEmailLink } from "@/components/layout/company-email-link";
 import { Brand } from "./brand";
 import { navigation, site } from "@/config/site";
 import { services } from "@/data/services";
@@ -17,6 +18,10 @@ export function Footer() {
             </p>
             <p className="footer-location">
               <MapPin size={17} aria-hidden="true" /> {site.location}
+            </p>
+            <p className="footer-location">
+              <Mail size={17} aria-hidden="true" />
+              <CompanyEmailLink />
             </p>
           </div>
           <nav aria-label="Footer navigation">

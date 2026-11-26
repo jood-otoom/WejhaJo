@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { site } from "@/config/site";
 
 const schema = z.object({
   CONTACT_RECIPIENT_EMAIL: z.email(),
@@ -12,6 +13,14 @@ const schema = z.object({
 export type ContactConfig = z.output<typeof schema>;
 
 export function getContactConfig() {
-  const result = schema.safeParse(process.env);
+  const configuredRecipient = process.env.CONTACT_RECIPIENT_EMAIL?.trim();
+  // Route production inquiries to the published address even if an old binding
+  // is still present. Standalone development can use an explicit test mailbox.
+  const recipient =
+    process.env.NODE_ENV === "production" ? site.email : configuredRecipient;
+  const result = schema.safeParse({
+    ...process.env,
+    CONTACT_RECIPIENT_EMAIL: recipient || site.email,
+  });
   return result.success ? result.data : null;
 }

@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { site } from "../src/config/site";
 import { projectCategories, projects } from "../src/data/projects";
 
 test("filters all portfolio categories and opens each project detail", async ({
@@ -95,7 +96,7 @@ test("checks links, social images and absence of contact credentials in public o
       await expect(page.locator(`[id="${id}"]`)).toHaveCount(1);
     else if (path.startsWith("/"))
       expect((await request.get(path)).ok(), path).toBe(true);
-    expect(url).not.toMatch(/^mailto:/);
+    if (url.startsWith("mailto:")) expect(url).toBe(`mailto:${site.email}`);
   }
   for (const path of [
     "/opengraph-image",
@@ -125,6 +126,49 @@ test("checks links, social images and absence of contact credentials in public o
   const xml = await sitemap.text();
   expect(xml).toContain("<loc>https://wejhajo.org/</loc>");
   expect(xml.match(/<loc>/g)).toHaveLength(13);
+});
+
+test("shows the same official email in contact links, policies, and metadata", async ({
+  page,
+}) => {
+  const mailto = `mailto:${site.email}`;
+  await page.goto("/");
+  const organization = JSON.parse(
+    (await page.locator('script[type="application/ld+json"]').textContent()) ??
+      "{}",
+  );
+  expect(organization).toMatchObject({
+    "@type": "Organization",
+    email: site.email,
+  });
+  await expect(page.locator('meta[name="contact"]')).toHaveAttribute(
+    "content",
+    site.email,
+  );
+
+  for (const width of [375, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const selector of ["#contact", ".site-footer"]) {
+      const link = page
+        .locator(selector)
+        .getByRole("link", { name: site.email, exact: true });
+      await expect(link).toBeVisible();
+      await expect(link).toHaveAttribute("href", mailto);
+      const bounds = await link.boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+    }
+  }
+
+  for (const path of ["/privacy", "/terms"]) {
+    await page.goto(path);
+    await expect(
+      page
+        .getByRole("main")
+        .getByRole("link", { name: site.email, exact: true }),
+    ).toHaveAttribute("href", mailto);
+  }
 });
 
 test("passes axe on the home page and loaded map", async ({ page }) => {

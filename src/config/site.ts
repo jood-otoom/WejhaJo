@@ -4,6 +4,7 @@ export const site = {
   description:
     "Wejha builds intelligent software, AI and digital solutions that help businesses and organizations work smarter and create lasting value.",
   location: "Amman, Jordan",
+  email: "official@wejhajo.org",
   language: "en",
   direction: "ltr",
 } as const;

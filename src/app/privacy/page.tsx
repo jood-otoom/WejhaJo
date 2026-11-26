@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CompanyEmailLink } from "@/components/layout/company-email-link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -33,8 +34,9 @@ export default function Privacy() {
       <p>
         Cloudflare hosts this website and may process technical request data for
         hosting and security. Resend processes the inquiry and your reply
-        address to deliver it to our company inbox. The website does not store
-        inquiry messages in a database. Authorized staff may retain inquiry
+        address to send it to our company address. Cloudflare Email Routing
+        forwards those messages to our inbox. The website does not store inquiry
+        messages in a database. Authorized staff may retain inquiry
         correspondence in the company inbox. Upstash receives a keyed identifier
         derived from the request IP address and stores short-lived counters for
         abuse prevention. Portfolio previews use local sample data and do not
@@ -49,9 +51,9 @@ export default function Privacy() {
       </p>
       <h2>Contact</h2>
       <p>
-        Wejha is based in Amman, Jordan. Please use the{" "}
-        <Link href="/#contact">contact form</Link> for privacy questions and
-        requests.
+        Wejha is based in Amman, Jordan. For privacy questions and requests,
+        email <CompanyEmailLink /> or use the{" "}
+        <Link href="/#contact">contact form</Link>.
       </p>
     </article>
   );

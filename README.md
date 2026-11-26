@@ -22,16 +22,18 @@ Open [localhost:8787](http://localhost:8787). The preview runs the built Worker 
 
 ## Runtime secrets
 
-On the `wejha-website` Worker, add these as **Secrets** under **Settings → Variables & Secrets**. Keep them out of GitHub and the Workers Builds variables. The app reads them at request time, so the Worker build needs no secrets. For local testing, copy `.env.example` to `.dev.vars` for Wrangler or `.env.local` for `next dev`. Use sandbox credentials and a test mailbox for local sending.
+On the `wejha-website` Worker, add these as **Secrets** under **Settings → Variables & Secrets**. Keep credential values out of GitHub and the Workers Builds variables. The app reads them at request time, so the Worker build needs no secrets. For local testing, copy `.env.example` to `.dev.vars` for Wrangler or `.env.local` for `next dev`. Use sandbox credentials for local testing. Standalone `next dev` can use a test mailbox.
 
 | Variable                   | Value                                                                         |
 | -------------------------- | ----------------------------------------------------------------------------- |
-| `CONTACT_RECIPIENT_EMAIL`  | Wejha’s approved inquiry inbox.                                               |
+| `CONTACT_RECIPIENT_EMAIL`  | `official@wejhajo.org`.                                                       |
 | `CONTACT_FROM_EMAIL`       | Bare sender email address on a domain or subdomain verified in Resend.        |
 | `RESEND_API_KEY`           | Resend key with send access for the verified sender domain.                   |
 | `UPSTASH_REDIS_REST_URL`   | The Upstash Redis HTTPS REST endpoint.                                        |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash REST token with write access.                                         |
 | `CONTACT_HASH_SECRET`      | A stable signing secret. Generate a random value with `openssl rand -hex 32`. |
+
+Production builds route inquiries to the official address in `src/config/site.ts` even when the Worker still has an older recipient binding. In **Settings → Variables & Secrets**, set `CONTACT_RECIPIENT_EMAIL` to `official@wejhajo.org` so the dashboard matches. Cloudflare Email Routing forwards incoming messages from that address to the company inbox. The Resend sender and the visitor’s Reply-To address are configured separately.
 
 The inquiry endpoint uses Cloudflare’s `CF-Connecting-IP` in the Worker, hashes visitor identifiers before sending them to Upstash, and uses a shared fallback when no trusted IP is available. Use a separate Upstash database for local provider tests to keep production counters isolated. Requests are limited to five per visitor per 15 minutes and 80 total per hour. The same signing secret also generates email idempotency keys. [Cloudflare request headers](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-connecting-ip) · [Worker secrets](https://developers.cloudflare.com/workers/configuration/secrets/)
 
@@ -62,7 +64,7 @@ The Playwright suite starts the built Worker with Wrangler on port 3100. Run it 
    | Deploy command               | `npm run deploy`       |
    | Non-production branch builds | Off                    |
 
-2. Review the Privacy Policy and Terms of Use before publishing. Verify the sending domain in Resend, provision Upstash Redis, and set the six runtime secrets on the Worker. The first deploy can run before those secrets are set. The contact endpoint returns 503 until configuration is complete. [Resend domain setup](https://resend.com/docs/dashboard/domains/introduction) · [Upstash setup](https://upstash.com/docs/redis/sdks/ratelimit-ts/gettingstarted)
+2. Review the Privacy Policy and Terms of Use before publishing. Verify the sending domain in Resend, provision Upstash Redis, and set the Worker’s runtime settings above. The first deploy can run before those secrets are set. The contact endpoint returns 503 until configuration is complete. [Resend domain setup](https://resend.com/docs/dashboard/domains/introduction) · [Upstash setup](https://upstash.com/docs/redis/sdks/ratelimit-ts/gettingstarted)
 3. Confirm the `wejhajo.org` zone is active in the same Cloudflare account. The first deployment attaches the apex as a Worker Custom Domain using `wrangler.jsonc`. Review any existing records or routes on that hostname before authorizing the change. Cloudflare creates the DNS record and manages TLS for the Custom Domain. [Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
 4. After deployment, verify the HTTPS homepage, canonical metadata, sitemap and a project detail on the apex domain. Submit a real test inquiry and verify Resend acceptance, inbox receipt, and Reply-To behavior.
 

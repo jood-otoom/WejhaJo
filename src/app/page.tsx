@@ -40,6 +40,7 @@ const organization = {
   logo: new URL("/brand/favicon.png", siteUrl).href,
   description: site.description,
   slogan: site.slogan,
+  email: site.email,
   foundingDate: "2026",
   address: {
     "@type": "PostalAddress",

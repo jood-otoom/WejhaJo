@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   },
   description: site.description,
   applicationName: site.name,
+  other: { contact: site.email },
   robots: { index: allowIndexing, follow: allowIndexing },
   icons: { icon: "/brand/favicon.png", apple: "/brand/favicon.png" },
   openGraph: {
