@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   agentRules: false,
   devIndicators: false,
+  // The bundled brand assets are already optimized for their display sizes.
+  images: { unoptimized: true },
   async headers() {
     return [
       {

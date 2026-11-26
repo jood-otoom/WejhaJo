@@ -7,6 +7,8 @@ import tseslint from "typescript-eslint";
 export default defineConfig([
   globalIgnores([
     ".next/**",
+    ".open-next/**",
+    ".wrangler/**",
     "out/**",
     "next-env.d.ts",
     "playwright-report/**",

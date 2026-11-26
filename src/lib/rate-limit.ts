@@ -1,7 +1,8 @@
 import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import { Redis } from "@upstash/redis/cloudflare";
 import type { ContactConfig } from "./contact-config";
 
 let limiters: { perVisitor: Ratelimit; global: Ratelimit } | undefined;
@@ -14,7 +15,7 @@ function getLimiters(config: ContactConfig) {
     retry: false,
     signal: () => AbortSignal.timeout(4_000),
   });
-  const prefix = `wejha:contact:${process.env.VERCEL_ENV ?? "local"}`;
+  const prefix = "wejha:contact";
   limiters = {
     perVisitor: new Ratelimit({
       redis,
@@ -34,14 +35,20 @@ function getLimiters(config: ContactConfig) {
   return limiters;
 }
 
+function getWorkerClientIp(request: Request) {
+  try {
+    getCloudflareContext();
+    return request.headers.get("cf-connecting-ip");
+  } catch {
+    // A standalone Next.js server has no trusted Cloudflare ingress.
+    return null;
+  }
+}
+
 export async function limitContact(request: Request, config: ContactConfig) {
   const { perVisitor, global } = getLimiters(config);
-  // Vercel overwrites this header. Local or other hosts share a fallback bucket.
-  const forwarded =
-    process.env.VERCEL === "1"
-      ? request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim()
-      : undefined;
-  const identity = forwarded && isIP(forwarded) ? forwarded : "shared";
+  const clientIp = getWorkerClientIp(request);
+  const identity = clientIp && isIP(clientIp) ? clientIp : "shared";
   const hash = createHmac("sha256", config.CONTACT_HASH_SECRET)
     .update(`visitor:${identity}`)
     .digest("hex");

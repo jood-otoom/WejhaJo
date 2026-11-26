@@ -31,7 +31,7 @@ export default function Privacy() {
       </p>
       <h2>Service providers and website security</h2>
       <p>
-        Vercel hosts this website and may process technical request data for
+        Cloudflare hosts this website and may process technical request data for
         hosting and security. Resend processes the inquiry and your reply
         address to deliver it to our company inbox. The website does not store
         inquiry messages in a database. Authorized staff may retain inquiry

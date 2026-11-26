@@ -8,6 +8,8 @@ import { ProjectShowcase } from "@/components/dashboards/showcase-loaders";
 
 type Props = { params: Promise<{ slug: string }> };
 
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return projects.map(({ slug }) => ({ slug }));
 }

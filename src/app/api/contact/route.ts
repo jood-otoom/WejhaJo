@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { siteUrl } from "@/config/site";
 import { getContactConfig } from "@/lib/contact-config";
 import { sendContact } from "@/lib/email";
 import { limitContact } from "@/lib/rate-limit";
 import { contactSchema, type ContactResponse } from "@/lib/validation";
-
-export const maxDuration = 25;
 
 const maximumBytes = 24_000;
 const unavailable =
@@ -51,16 +50,12 @@ function reply(
 
 export async function POST(request: Request) {
   const origin = request.headers.get("origin");
-  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL
-    ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
-    : undefined;
   const url = new URL(request.url);
   const host = request.headers.get("host") ?? url.host;
-  const protocol = process.env.VERCEL === "1" ? "https:" : url.protocol;
-  const requestOrigin = `${protocol}//${host}`;
+  const requestOrigin = `${url.protocol}//${host}`;
   if (
     !origin ||
-    (origin !== requestOrigin && origin !== siteOrigin) ||
+    (origin !== requestOrigin && origin !== siteUrl.origin) ||
     request.headers.get("sec-fetch-site") === "cross-site"
   ) {
     return reply(

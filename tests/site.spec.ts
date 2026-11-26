@@ -34,7 +34,7 @@ test("filters all portfolio categories and opens each project detail", async ({
     ).toBeVisible();
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       "href",
-      new RegExp(`/projects/${slug}$`),
+      `https://wejhajo.org/projects/${slug}`,
     );
   }
 });
@@ -78,6 +78,10 @@ test("checks links, social images and absence of contact credentials in public o
   expect(response?.headers()["content-security-policy"]).toContain(
     "frame-ancestors 'none'",
   );
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    /^https:\/\/wejhajo\.org\/?$/,
+  );
   const links = await page
     .locator("a[href]")
     .evaluateAll((anchors) =>
@@ -102,14 +106,25 @@ test("checks links, social images and absence of contact credentials in public o
     expect(asset.ok(), path).toBe(true);
     expect(asset.headers()["content-type"]).toContain("image/png");
   }
+  const brand = await request.get("/brand/wejha-mark.webp");
+  expect(brand.ok()).toBe(true);
+  expect(brand.headers()["content-type"]).toContain("image/webp");
   const html = await page.content();
   expect(html).not.toMatch(
     /RESEND_API_KEY|UPSTASH_REDIS_REST_TOKEN|CONTACT_HASH_SECRET/,
   );
   expect(responses).toEqual([]);
   expect((await request.get("/projects/unknown-project")).status()).toBe(404);
-  expect((await request.get("/robots.txt")).ok()).toBe(true);
-  expect((await request.get("/sitemap.xml")).ok()).toBe(true);
+  const robots = await request.get("/robots.txt");
+  expect(robots.ok()).toBe(true);
+  expect(await robots.text()).toContain(
+    "Sitemap: https://wejhajo.org/sitemap.xml",
+  );
+  const sitemap = await request.get("/sitemap.xml");
+  expect(sitemap.ok()).toBe(true);
+  const xml = await sitemap.text();
+  expect(xml).toContain("<loc>https://wejhajo.org/</loc>");
+  expect(xml.match(/<loc>/g)).toHaveLength(13);
 });
 
 test("passes axe on the home page and loaded map", async ({ page }) => {

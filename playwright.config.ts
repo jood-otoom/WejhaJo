@@ -25,7 +25,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run start -- --hostname 127.0.0.1 --port 3100",
+    command: "npm run preview -- --ip 127.0.0.1 --port 3100",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 45_000,

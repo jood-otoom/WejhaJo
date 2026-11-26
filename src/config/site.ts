@@ -17,8 +17,5 @@ export const navigation = [
   { id: "contact", label: "Contact" },
 ] as const;
 
-export const productionUrl = process.env.NEXT_PUBLIC_SITE_URL;
-export const siteUrl = new URL(productionUrl || "http://localhost:3000");
-export const allowIndexing =
-  Boolean(productionUrl) &&
-  (process.env.VERCEL_ENV ? process.env.VERCEL_ENV === "production" : true);
+export const siteUrl = new URL("https://wejhajo.org");
+export const allowIndexing = process.env.NODE_ENV === "production";

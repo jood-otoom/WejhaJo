@@ -6,6 +6,8 @@ export const alt = "Wejha project preview";
 export const size = imageSize;
 export const contentType = "image/png";
 
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return projects.map(({ slug }) => ({ slug }));
 }

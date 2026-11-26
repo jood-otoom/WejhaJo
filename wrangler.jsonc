@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "wejha-website",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets",
+  },
+  "routes": [{ "pattern": "wejhajo.org", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": false,
+  "minify": true,
+  "keep_vars": true,
+}
