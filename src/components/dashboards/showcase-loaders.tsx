@@ -15,27 +15,6 @@ const Impact = dynamic(() => import("./impact").then(({ Impact }) => Impact), {
   ssr: false,
   loading: LoadingPreview,
 });
-const Intelligence = dynamic(
-  () => import("./charts").then(({ Intelligence }) => Intelligence),
-  { ssr: false, loading: LoadingPreview },
-);
-const Forecast = dynamic(
-  () => import("./charts").then(({ Forecast }) => Forecast),
-  { ssr: false, loading: LoadingPreview },
-);
-const Knowledge = dynamic(
-  () => import("./workspaces").then(({ Knowledge }) => Knowledge),
-  { ssr: false, loading: LoadingPreview },
-);
-const Booking = dynamic(
-  () => import("./workspaces").then(({ Booking }) => Booking),
-  { ssr: false, loading: LoadingPreview },
-);
-const Procurement = dynamic(
-  () => import("./workspaces").then(({ Procurement }) => Procurement),
-  { ssr: false, loading: LoadingPreview },
-);
-
 function NearViewport({ children }: { children: ReactNode }) {
   const anchor = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -65,40 +44,5 @@ export function ImpactPreview() {
     <NearViewport>
       <Impact />
     </NearViewport>
-  );
-}
-
-const demos = [
-  { title: "Business intelligence dashboard", Content: Intelligence },
-  { title: "Sales forecasting dashboard", Content: Forecast },
-  { title: "Knowledge assistant", Content: Knowledge },
-  { title: "GoTime booking demo", Content: Booking },
-  { title: "Procurement workspace", Content: Procurement },
-] as const;
-
-function DemoDisclosure({ title, Content }: (typeof demos)[number]) {
-  const [open, setOpen] = useState(false);
-  return (
-    <details
-      name="portfolio-demo"
-      onToggle={(event) => setOpen(event.currentTarget.open)}
-    >
-      <summary>{title}</summary>
-      {open && <Content />}
-    </details>
-  );
-}
-
-export function PortfolioDemos() {
-  return (
-    <section
-      className="portfolio-demos"
-      aria-labelledby="portfolio-demos-heading"
-    >
-      <h3 id="portfolio-demos-heading">Interactive demos</h3>
-      {demos.map((demo) => (
-        <DemoDisclosure key={demo.title} {...demo} />
-      ))}
-    </section>
   );
 }

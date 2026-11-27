@@ -1,6 +1,6 @@
 # WejhaJo
 
-Wejha’s official company website includes a nine-project portfolio, six on-page interactive demos, and a server-side inquiry form. The public site is configured for `https://wejhajo.org`.
+Wejha’s official company website includes a nine-project portfolio, an interactive regional impact explorer, and a server-side inquiry form. The public site is configured for `https://wejhajo.org`.
 
 ## Local setup
 
@@ -40,7 +40,7 @@ npx playwright install chromium webkit
 npm run test:e2e
 ```
 
-The Playwright suite starts the built Worker with Wrangler on port 3100. It exercises the local email simulator without credentials. It also covers navigation and accessibility, portfolio filters, on-page demos, responsive layouts, and contact form behavior. GitHub Actions runs the same checks on pushes and pull requests.
+The Playwright suite starts the built Worker with Wrangler on port 3100. It exercises the local email simulator without credentials. It also covers navigation and accessibility, portfolio filters, the regional impact explorer, responsive layouts, and contact form behavior. GitHub Actions runs the same checks on pushes and pull requests.
 
 ## Cloudflare Workers deployment
 

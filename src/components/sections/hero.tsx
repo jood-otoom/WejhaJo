@@ -96,9 +96,9 @@ export function Hero() {
                   </svg>
                   <span className="network-core">
                     <Image
-                      src="/brand/wejha-mark.webp"
-                      width={55}
-                      height={33}
+                      src="/brand/wejha-logo.png"
+                      width={2172}
+                      height={724}
                       alt=""
                       priority
                     />

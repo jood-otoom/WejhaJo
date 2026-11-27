@@ -9,8 +9,10 @@ export async function socialImage(
   eyebrow: string,
   description: string,
 ) {
-  const mark = await readFile(join(process.cwd(), "public/brand/favicon.png"));
-  const image = `data:image/png;base64,${mark.toString("base64")}`;
+  const logo = await readFile(
+    join(process.cwd(), "public/brand/wejha-logo.png"),
+  );
+  const image = `data:image/png;base64,${logo.toString("base64")}`;
   return new ImageResponse(
     <div
       style={{
@@ -29,22 +31,17 @@ export async function socialImage(
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 17,
-          fontSize: 42,
-          fontWeight: 700,
-          letterSpacing: "-1px",
         }}
       >
         {/* The OG rasterizer consumes a data URL directly. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={image}
-          width={62}
-          height={62}
+          width={250}
+          height={84}
           alt=""
-          style={{ borderRadius: 10 }}
+          style={{ borderRadius: 10, objectFit: "cover" }}
         />
-        <span>wejha</span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
         <span

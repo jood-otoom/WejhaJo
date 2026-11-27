@@ -11,10 +11,7 @@ import {
 import { Contact } from "@/components/sections/contact";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { Portfolio } from "@/components/projects/portfolio";
-import {
-  ImpactPreview,
-  PortfolioDemos,
-} from "@/components/dashboards/showcase-loaders";
+import { ImpactPreview } from "@/components/dashboards/showcase-loaders";
 import { site, siteUrl } from "@/config/site";
 
 export const metadata: Metadata = {
@@ -34,7 +31,7 @@ const organization = {
   "@type": "Organization",
   name: site.name,
   url: siteUrl.href,
-  logo: new URL("/brand/favicon.png", siteUrl).href,
+  logo: new URL("/brand/wejha-logo.png", siteUrl).href,
   description: site.description,
   slogan: site.slogan,
   email: site.email,
@@ -97,7 +94,6 @@ export default function Home() {
             </div>
             <ImpactPreview />
           </div>
-          <PortfolioDemos />
         </div>
       </section>
       <Industries />

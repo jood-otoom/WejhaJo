@@ -101,9 +101,9 @@ test("checks links, social images and absence of contact credentials in public o
     expect(asset.ok(), path).toBe(true);
     expect(asset.headers()["content-type"]).toContain("image/png");
   }
-  const brand = await request.get("/brand/wejha-mark.webp");
+  const brand = await request.get("/brand/wejha-logo.png");
   expect(brand.ok()).toBe(true);
-  expect(brand.headers()["content-type"]).toContain("image/webp");
+  expect(brand.headers()["content-type"]).toContain("image/png");
   const html = await page.content();
   expect(html).not.toMatch(
     /official@gotimejo\.com|CONTACT_EMAIL|CONTACT_CLIENT_LIMIT|CONTACT_ENDPOINT_LIMIT/,

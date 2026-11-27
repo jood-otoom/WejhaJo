@@ -49,15 +49,7 @@ for (const width of [375, 768, 1024, 1440, 1920]) {
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
-    await page
-      .locator(".portfolio-demos > details > summary")
-      .filter({ hasText: "Business intelligence dashboard" })
-      .click();
-    await expect(
-      page.getByRole("region", {
-        name: "Business intelligence dashboard",
-      }),
-    ).toBeVisible();
+    await expect(page.locator("#portfolio-grid .project-card")).toHaveCount(9);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
